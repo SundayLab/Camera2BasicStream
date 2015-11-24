@@ -4,7 +4,7 @@ Android Camera2BasicStream
 
 This little demo is based on the Camera2Basics example. I really needed to pipe out every frame the 
 camera provides to a specific endpoint e.g for streaming. The camera2 api is quite new and right now
-its a little bit more complicated grab a frame and convert it to a bitmap for your processing needs.
+its a little bit more complicated to grab a frame and convert it to a bitmap for your processing needs.
 
 The app will work on the nexus4 and the moto x. Why that ?
 
