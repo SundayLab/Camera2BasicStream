@@ -43,6 +43,7 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -258,7 +259,6 @@ public class Camera2BasicFragment extends Fragment
                     width_ima = smallest.getWidth();
                     height_ima = smallest.getHeight();
                     mBitmap = Bitmap.createBitmap(width_ima, height_ima, Bitmap.Config.RGB_565);
-                    mRGBData = new int[width_ima * height_ima];
                 }
 
                 ByteBuffer buffer = test.getPlanes()[0].getBuffer();
@@ -302,7 +302,6 @@ public class Camera2BasicFragment extends Fragment
     /**
      * The current state of camera state for taking pictures.
      *
-     * @see #
      */
     private int mState = STATE_PREVIEW;
 
@@ -312,7 +311,6 @@ public class Camera2BasicFragment extends Fragment
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
 
     private Bitmap mBitmap;
-    private int[] mRGBData;
     private int width_ima, height_ima;
 
     public Bitmap getBitmap() {
