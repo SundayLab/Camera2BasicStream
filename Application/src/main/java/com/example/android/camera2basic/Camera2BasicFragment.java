@@ -17,11 +17,10 @@
 package com.example.android.camera2basic;
 
 import android.Manifest;
+import android.Manifest.permission;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
-import android.app.Fragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
@@ -44,11 +43,14 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
-import android.support.v13.app.FragmentCompat;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
@@ -58,7 +60,6 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -76,7 +77,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class Camera2BasicFragment extends Fragment
-        implements View.OnClickListener, FragmentCompat.OnRequestPermissionsResultCallback {
+        implements View.OnClickListener {
 
     /**
      * Conversion from screen rotation to JPEG orientation.
@@ -131,7 +132,7 @@ public class Camera2BasicFragment extends Fragment
 
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
-            openCamera(width, height);
+            openCameraOrRequestPermission(width, height);
         }
 
         @Override
@@ -258,7 +259,6 @@ public class Camera2BasicFragment extends Fragment
                     width_ima = smallest.getWidth();
                     height_ima = smallest.getHeight();
                     mBitmap = Bitmap.createBitmap(width_ima, height_ima, Bitmap.Config.RGB_565);
-                    mRGBData = new int[width_ima * height_ima];
                 }
 
                 ByteBuffer buffer = test.getPlanes()[0].getBuffer();
@@ -302,7 +302,6 @@ public class Camera2BasicFragment extends Fragment
     /**
      * The current state of camera state for taking pictures.
      *
-     * @see #
      */
     private int mState = STATE_PREVIEW;
 
@@ -312,7 +311,6 @@ public class Camera2BasicFragment extends Fragment
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
 
     private Bitmap mBitmap;
-    private int[] mRGBData;
     private int width_ima, height_ima;
 
     public Bitmap getBitmap() {
@@ -472,9 +470,24 @@ public class Camera2BasicFragment extends Fragment
         // a camera and start preview from here (otherwise, we wait until the surface is ready in
         // the SurfaceTextureListener).
         if (mTextureView.isAvailable()) {
-            openCamera(mTextureView.getWidth(), mTextureView.getHeight());
+            openCameraOrRequestPermission(mTextureView.getWidth(), mTextureView.getHeight());
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+        }
+    }
+
+    private void openCameraOrRequestPermission(int width, int height) {
+        if (ActivityCompat.checkSelfPermission(getActivity(), permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat
+                .shouldShowRequestPermissionRationale(getActivity(), Manifest.permission.CAMERA)) {
+                new ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
+            } else {
+                ActivityCompat
+                    .requestPermissions(getActivity(), new String[]{Manifest.permission.CAMERA},
+                        REQUEST_CAMERA_PERMISSION);
+            }
+        } else {
+            openCamera(width, height);
         }
     }
 
@@ -483,15 +496,6 @@ public class Camera2BasicFragment extends Fragment
         closeCamera();
         stopBackgroundThread();
         super.onPause();
-    }
-
-    private void requestCameraPermission() {
-        if (FragmentCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
-            new ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
-        } else {
-            FragmentCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA},
-                    REQUEST_CAMERA_PERMISSION);
-        }
     }
 
     @Override
@@ -503,7 +507,7 @@ public class Camera2BasicFragment extends Fragment
                         .show(getChildFragmentManager(), FRAGMENT_DIALOG);
             }
         } else {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+            openCameraOrRequestPermission(mTextureView.getWidth(), mTextureView.getHeight());
         }
     }
 
@@ -1021,6 +1025,7 @@ public class Camera2BasicFragment extends Fragment
      */
     public static class ConfirmationDialog extends DialogFragment {
 
+        @NonNull
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
             final Fragment parent = getParentFragment();
@@ -1029,7 +1034,7 @@ public class Camera2BasicFragment extends Fragment
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            FragmentCompat.requestPermissions(parent,
+                            ActivityCompat.requestPermissions(parent.getActivity(),
                                     new String[]{Manifest.permission.CAMERA},
                                     REQUEST_CAMERA_PERMISSION);
                         }
